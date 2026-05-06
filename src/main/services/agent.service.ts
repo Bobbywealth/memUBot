@@ -1253,7 +1253,9 @@ export class AgentService {
       return response
     } catch (error) {
       // #region agent log
-      fetch('http://localhost:7892/ingest/443430ae-db47-457c-ba67-1dd0ac8fcd15',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'eafdcd'},body:JSON.stringify({sessionId:'eafdcd',location:'agent.service.ts:processMessage:catch',message:'processMessage error caught',data:{error:String(error),errorName:(error as any)?.name,status:(error as any)?.status,stack:(error as any)?.stack?.substring?.(0,800)},timestamp:Date.now(),hypothesisId:'D'})}).catch(()=>{});
+      if (process.env.MEMU_DEV_TELEMETRY === 'true') {
+        fetch('http://localhost:7892/ingest/443430ae-db47-457c-ba67-1dd0ac8fcd15',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'eafdcd'},body:JSON.stringify({sessionId:'eafdcd',location:'agent.service.ts:processMessage:catch',message:'processMessage error caught',data:{error:String(error),errorName:(error as any)?.name,status:(error as any)?.status,stack:(error as any)?.stack?.substring?.(0,800)},timestamp:Date.now(),hypothesisId:'D'})}).catch(()=>{});
+      }
       // #endregion
       // Check if it was an abort
       if (this.isAborted) {
@@ -1315,7 +1317,9 @@ export class AgentService {
       ? tools
       : tools.filter((tool) => tool.name !== 'bash')
     // #region agent log
-    fetch('http://localhost:7892/ingest/443430ae-db47-457c-ba67-1dd0ac8fcd15',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'eafdcd'},body:JSON.stringify({sessionId:'eafdcd',location:'agent.service.ts:runAgentLoop',message:'tools loaded',data:{totalTools:effectiveTools.length,mcpTools:effectiveTools.filter(t=>t.name.startsWith('mcp_')).map(t=>({name:t.name,schemaKeys:Object.keys(t.input_schema||{})})),provider,model},timestamp:Date.now(),hypothesisId:'A,B,C'})}).catch(()=>{});
+    if (process.env.MEMU_DEV_TELEMETRY === 'true') {
+      fetch('http://localhost:7892/ingest/443430ae-db47-457c-ba67-1dd0ac8fcd15',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'eafdcd'},body:JSON.stringify({sessionId:'eafdcd',location:'agent.service.ts:runAgentLoop',message:'tools loaded',data:{totalTools:effectiveTools.length,mcpTools:effectiveTools.filter(t=>t.name.startsWith('mcp_')).map(t=>({name:t.name,schemaKeys:Object.keys(t.input_schema||{})})),provider,model},timestamp:Date.now(),hypothesisId:'A,B,C'})}).catch(()=>{});
+    }
     // #endregion
 
     // Enforce message count limit once before the loop starts
@@ -1463,7 +1467,9 @@ export class AgentService {
         }
       } catch (apiError: unknown) {
         // #region agent log
-        fetch('http://localhost:7892/ingest/443430ae-db47-457c-ba67-1dd0ac8fcd15',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'eafdcd'},body:JSON.stringify({sessionId:'eafdcd',location:'agent.service.ts:catch',message:'API error caught',data:{error:String(apiError),errorName:(apiError as any)?.name,status:(apiError as any)?.status,errorMessage:(apiError as any)?.message?.substring?.(0,500),provider,model},timestamp:Date.now(),hypothesisId:'B,D'})}).catch(()=>{});
+        if (process.env.MEMU_DEV_TELEMETRY === 'true') {
+          fetch('http://localhost:7892/ingest/443430ae-db47-457c-ba67-1dd0ac8fcd15',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'eafdcd'},body:JSON.stringify({sessionId:'eafdcd',location:'agent.service.ts:catch',message:'API error caught',data:{error:String(apiError),errorName:(apiError as any)?.name,status:(apiError as any)?.status,errorMessage:(apiError as any)?.message?.substring?.(0,500),provider,model},timestamp:Date.now(),hypothesisId:'B,D'})}).catch(()=>{});
+        }
         // #endregion
         // Check if this is a token limit / context length error
         const errorStr = String(apiError)
@@ -1541,7 +1547,9 @@ export class AgentService {
       
       console.log('[Agent] Response received, stop_reason:', response.stop_reason)
       // #region agent log
-      fetch('http://localhost:7892/ingest/443430ae-db47-457c-ba67-1dd0ac8fcd15',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'eafdcd'},body:JSON.stringify({sessionId:'eafdcd',location:'agent.service.ts:afterAPIcall',message:'LLM response received',data:{stopReason:response.stop_reason,contentTypes:response.content?.map((b:any)=>b.type),toolNames:response.content?.filter((b:any)=>b.type==='tool_use').map((b:any)=>b.name),iteration:iterations},timestamp:Date.now(),hypothesisId:'B,D'})}).catch(()=>{});
+      if (process.env.MEMU_DEV_TELEMETRY === 'true') {
+        fetch('http://localhost:7892/ingest/443430ae-db47-457c-ba67-1dd0ac8fcd15',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'eafdcd'},body:JSON.stringify({sessionId:'eafdcd',location:'agent.service.ts:afterAPIcall',message:'LLM response received',data:{stopReason:response.stop_reason,contentTypes:response.content?.map((b:any)=>b.type),toolNames:response.content?.filter((b:any)=>b.type==='tool_use').map((b:any)=>b.name),iteration:iterations},timestamp:Date.now(),hypothesisId:'B,D'})}).catch(()=>{});
+      }
       // #endregion
 
       // Use response directly (already Anthropic.Message type)
