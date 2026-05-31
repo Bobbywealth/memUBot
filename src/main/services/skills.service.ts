@@ -4,12 +4,64 @@ import { app } from 'electron'
 import fetch from 'node-fetch'
 
 /**
+ * Skill categories for organization
+ */
+export type SkillCategory = 
+  | 'platform-specific'  // macOS, Windows, Linux specific
+  | 'business'           // Business/professional workflows
+  | 'utility'            // General utilities
+  | 'productivity'       // Productivity tools
+  | 'communication'      // Messaging/communication
+  | 'development'        // Developer tools
+  | 'curated'            // OpenAI curated skills
+  | 'experimental'       // Experimental/skills
+  | 'system'             // System-level skills
+  | 'unknown'            // Uncategorized
+
+/**
+ * Skill platform requirement
+ */
+export type SkillPlatform = 'macos' | 'windows' | 'linux' | 'all'
+
+/**
+ * Trigger phrase for skill matching
+ */
+export interface SkillTrigger {
+  keywords: string[]       // Keywords that trigger this skill
+  patterns: string[]        // Regex patterns (optional)
+  examples: string[]        // Example user phrases
+  score: number             // Base relevance score (0-1)
+}
+
+/**
+ * Parsed skill sections from SKILL.md
+ */
+export interface SkillSections {
+  whenToUse?: string        // ## When to Use content
+  contract?: string         // ## Contract content (do's and don'ts)
+  helper?: string           // ## Helper content (reference/scripts)
+  pitfalls?: string         // ## Pitfalls content (common failures)
+}
+
+/**
  * Skill metadata from SKILL.md frontmatter
  */
 export interface SkillMetadata {
   name: string
   description: string
   shortDescription?: string
+  category?: SkillCategory
+  platform?: SkillPlatform
+}
+
+/**
+ * Full skill contract with structured sections for agent consumption
+ */
+export interface SkillContract {
+  metadata: SkillMetadata
+  sections: SkillSections
+  triggers: SkillTrigger[]
+  rawContent: string
 }
 
 /**
@@ -23,6 +75,33 @@ export interface LocalSkill {
   enabled: boolean
   source: 'local' | 'github'
   installedAt?: string
+  category?: SkillCategory
+  platform?: SkillPlatform
+  triggers?: SkillTrigger[]
+}
+
+/**
+ * Skill manifest entry for fast startup discovery
+ */
+export interface SkillManifestEntry {
+  id: string
+  name: string
+  description: string
+  category: SkillCategory
+  platform: SkillPlatform
+  triggers: SkillTrigger[]
+  path: string
+  source: 'local' | 'github' | 'builtin'
+  lastModified?: string
+}
+
+/**
+ * Skill manifest for fast startup discovery
+ */
+export interface SkillManifest {
+  version: string
+  generated: string
+  skills: SkillManifestEntry[]
 }
 
 /**
@@ -56,21 +135,36 @@ interface GitHubSkillsCache {
 // Cache duration: 10 minutes
 const CACHE_DURATION_MS = 10 * 60 * 1000
 
+// Common words to exclude from keyword extraction
+const STOP_WORDS = new Set([
+  'that', 'this', 'with', 'from', 'when', 'have', 'been', 'will',
+  'would', 'could', 'should', 'what', 'which', 'your', 'they',
+  'them', 'their', 'there', 'where', 'when', 'while', 'about',
+  'after', 'before', 'between', 'into', 'through', 'during', 'under',
+  'again', 'further', 'then', 'once', 'here', 'there', 'above',
+  'below', 'other', 'some', 'such', 'only', 'same', 'than', 'too',
+  'very', 'just', 'also', 'now', 'even', 'still', 'always', 'never'
+])
+
 /**
  * Service for managing agent skills
  */
 class SkillsService {
   private skillsDir: string
   private configPath: string
+  private manifestPath: string
   private config: SkillsConfig = { enabledSkills: [], disabledSkills: [] }
   private initialized = false
   private githubSkillsCache: GitHubSkillsCache | null = null
   private userAgent: string = 'bobby-bot'
+  private manifest: SkillManifest | null = null
+  private skillContractsCache: Map<string, SkillContract> = new Map()
 
   constructor() {
     const userDataPath = app.getPath('userData')
     this.skillsDir = path.join(userDataPath, 'skills')
     this.configPath = path.join(userDataPath, 'skills-config.json')
+    this.manifestPath = path.join(userDataPath, 'skills-manifest.json')
   }
 
   /**
@@ -84,6 +178,9 @@ class SkillsService {
 
     // Load configuration
     await this.loadConfig()
+
+    // Load manifest for fast startup discovery
+    await this.loadManifest()
 
     this.initialized = true
     console.log('[Skills] Service initialized, skills directory:', this.skillsDir)
@@ -128,6 +225,8 @@ class SkillsService {
         if (key === 'name') metadata.name = value.trim()
         if (key === 'description') metadata.description = value.trim()
         if (key === 'short-description') metadata.shortDescription = value.trim()
+        if (key === 'category') metadata.category = value.trim() as SkillCategory
+        if (key === 'platform') metadata.platform = value.trim() as SkillPlatform
       }
     }
 
@@ -135,6 +234,124 @@ class SkillsService {
       return metadata as SkillMetadata
     }
     return null
+  }
+
+  /**
+   * Parse skill sections from SKILL.md content
+   * Extracts ## When to Use, ## Contract, ## Helper, ## Pitfalls
+   */
+  parseSkillSections(content: string): SkillSections {
+    const sections: SkillSections = {}
+
+    // Extract ## When to Use
+    const whenToUseMatch = content.match(/## When to Use\n([\s\S]*?)(?=^## |\n## |\Z)/m)
+    if (whenToUseMatch) {
+      sections.whenToUse = whenToUseMatch[1].trim()
+    }
+
+    // Extract ## Contract
+    const contractMatch = content.match(/## Contract\n([\s\S]*?)(?=^## |\n## |\Z)/m)
+    if (contractMatch) {
+      sections.contract = contractMatch[1].trim()
+    }
+
+    // Extract ## Helper
+    const helperMatch = content.match(/## Helper\n([\s\S]*?)(?=^## |\n## |\Z)/m)
+    if (helperMatch) {
+      sections.helper = helperMatch[1].trim()
+    }
+
+    // Extract ## Pitfalls
+    const pitfallsMatch = content.match(/## Pitfalls\n([\s\S]*?)(?=^## |\n## |\Z)/m)
+    if (pitfallsMatch) {
+      sections.pitfalls = pitfallsMatch[1].trim()
+    }
+
+    return sections
+  }
+
+  /**
+   * Extract trigger phrases from "When to Use" section
+   * Returns structured data for skill matching
+   */
+  getSkillTriggers(skillId: string, content: string): SkillTrigger[] {
+    const triggers: SkillTrigger[] = []
+    const whenToUseMatch = content.match(/## When to Use\n([\s\S]*?)(?=^## |\n## |\Z)/m)
+    
+    if (!whenToUseMatch) return triggers
+
+    const whenToUseContent = whenToUseMatch[1]
+    
+    // Extract bullet points as trigger examples
+    const bulletRegex = /[-*]\s*(.+)/g
+    const examples: string[] = []
+    let match
+    while ((match = bulletRegex.exec(whenToUseContent)) !== null) {
+      examples.push(match[1].trim())
+    }
+
+    // Extract keywords from content (simple word extraction)
+    const words = whenToUseContent
+      .toLowerCase()
+      .replace(/[^a-z0-9\s]/g, ' ')
+      .split(/\s+/)
+      .filter(w => w.length > 3 && !STOP_WORDS.has(w))
+
+    const uniqueKeywords = [...new Set(words)].slice(0, 20)
+
+    triggers.push({
+      keywords: uniqueKeywords,
+      patterns: [],
+      examples: examples.slice(0, 10),
+      score: 1.0
+    })
+
+    return triggers
+  }
+
+  /**
+   * Get full skill contract with structured sections
+   * Used for lazy loading and agent consumption
+   */
+  async getSkillContract(skillId: string, skillPath?: string): Promise<SkillContract | null> {
+    // Check cache first
+    if (this.skillContractsCache.has(skillId)) {
+      return this.skillContractsCache.get(skillId)!
+    }
+
+    const basePath = skillPath || path.join(this.skillsDir, skillId)
+    const skillMdPath = path.join(basePath, 'SKILL.md')
+
+    try {
+      const content = await fs.readFile(skillMdPath, 'utf-8')
+      const metadata = this.parseSkillMd(content)
+
+      if (!metadata) return null
+
+      const sections = this.parseSkillSections(content)
+      const triggers = this.getSkillTriggers(skillId, content)
+
+      const contract: SkillContract = {
+        metadata,
+        sections,
+        triggers,
+        rawContent: content
+      }
+
+      // Cache the contract
+      this.skillContractsCache.set(skillId, contract)
+
+      return contract
+    } catch {
+      return null
+    }
+  }
+
+  /**
+   * Clear skill contract cache (call when skills change)
+   */
+  clearContractsCache(): void {
+    this.skillContractsCache.clear()
   }
 
   /**
@@ -210,6 +427,10 @@ class SkillsService {
       await fs.rm(skillPath, { recursive: true, force: true })
       this.config.disabledSkills = this.config.disabledSkills.filter((id) => id !== skillId)
       await this.saveConfig()
+      // Clear contracts cache and rebuild manifest
+      this.clearContractsCache()
+      this.manifest = null
+      await this.saveManifest()
       return true
     } catch (error) {
       console.error('[Skills] Failed to delete skill:', error)
@@ -271,6 +492,11 @@ class SkillsService {
     try {
       // Copy the entire directory
       await this.copyDirectory(sourcePath, destPath)
+
+      // Clear contracts cache and rebuild manifest
+      this.clearContractsCache()
+      this.manifest = null
+      await this.saveManifest()
 
       return {
         id: skillId,
@@ -675,6 +901,215 @@ class SkillsService {
    */
   getSkillsDir(): string {
     return this.skillsDir
+  }
+
+  /**
+   * Load skill manifest from disk (fast startup discovery)
+   */
+  async loadManifest(): Promise<SkillManifest | null> {
+    try {
+      const data = await fs.readFile(this.manifestPath, 'utf-8')
+      this.manifest = JSON.parse(data)
+      return this.manifest
+    } catch {
+      return null
+    }
+  }
+
+  /**
+   * Save skill manifest to disk
+   */
+  async saveManifest(): Promise<void> {
+    const manifest: SkillManifest = {
+      version: '1.0',
+      generated: new Date().toISOString(),
+      skills: []
+    }
+
+    // Scan installed skills and build manifest
+    const installedSkills = await this.getInstalledSkills()
+    for (const skill of installedSkills) {
+      const contract = await this.getSkillContract(skill.id, skill.path)
+      if (contract) {
+        manifest.skills.push({
+          id: skill.id,
+          name: contract.metadata.name,
+          description: contract.metadata.description,
+          category: contract.metadata.category || 'unknown',
+          platform: contract.metadata.platform || 'all',
+          triggers: contract.triggers,
+          path: skill.path,
+          source: skill.source
+        })
+      }
+    }
+
+    this.manifest = manifest
+    await fs.writeFile(this.manifestPath, JSON.stringify(manifest, null, 2))
+    console.log(`[Skills] Manifest saved with ${manifest.skills.length} skills`)
+  }
+
+  /**
+   * Get cached manifest (loads on demand)
+   */
+  async getManifest(): Promise<SkillManifest | null> {
+    if (!this.manifest) {
+      this.manifest = await this.loadManifest()
+    }
+    return this.manifest
+  }
+
+  /**
+   * Score a skill against a query string for relevance matching
+   * Returns a score from 0 to 1 (higher = more relevant)
+   */
+  scoreSkillAgainstQuery(skill: SkillManifestEntry, query: string): number {
+    const queryLower = query.toLowerCase()
+    const queryWords = queryLower.split(/\s+/).filter(w => w.length > 2)
+    
+    let score = 0
+    let maxPossibleScore = 0
+
+    // Check triggers (highest weight - 60% max)
+    for (const trigger of skill.triggers) {
+      maxPossibleScore += 0.6
+      
+      // Check keywords
+      for (const keyword of trigger.keywords) {
+        if (queryLower.includes(keyword.toLowerCase())) {
+          score += 0.3 / Math.max(trigger.keywords.length, 1)
+        }
+      }
+      
+      // Check examples (higher weight)
+      for (const example of trigger.examples) {
+        const exampleLower = example.toLowerCase()
+        if (exampleLower.includes(queryLower) || queryLower.includes(exampleLower)) {
+          score += 0.2
+        }
+        // Partial word match
+        for (const word of queryWords) {
+          if (exampleLower.includes(word)) {
+            score += 0.05
+          }
+        }
+      }
+    }
+
+    // Check name and description (40% max)
+    maxPossibleScore += 0.4
+    const nameMatch = skill.name.toLowerCase().includes(queryLower)
+    const descMatch = skill.description.toLowerCase().includes(queryLower)
+    
+    if (nameMatch) score += 0.3
+    if (descMatch) score += 0.1
+
+    // Normalize to 0-1 range
+    return maxPossibleScore > 0 ? Math.min(score / maxPossibleScore, 1) : 0
+  }
+
+  /**
+   * Match skills against a query string using trigger scoring
+   * Returns skills sorted by relevance score (lazy loading friendly)
+   */
+  async matchSkills(query: string, limit: number = 5): Promise<Array<{ skill: SkillManifestEntry; score: number }>> {
+    await this.initialize()
+    
+    const manifest = await this.getManifest()
+    if (!manifest || manifest.skills.length === 0) {
+      return []
+    }
+
+    const results: Array<{ skill: SkillManifestEntry; score: number }> = []
+
+    for (const skill of manifest.skills) {
+      const score = this.scoreSkillAgainstQuery(skill, query)
+      if (score > 0.1) { // Minimum threshold
+        results.push({ skill, score })
+      }
+    }
+
+    // Sort by score descending
+    results.sort((a, b) => b.score - a.score)
+
+    return results.slice(0, limit)
+  }
+
+  /**
+   * Get matched skill content for agent context (lazy loading)
+   * Only loads skills that match the query above threshold
+   */
+  async getMatchedSkillsContent(query: string, threshold: number = 0.3): Promise<string> {
+    const matched = await this.matchSkills(query, 10)
+    
+    if (matched.length === 0) return ''
+
+    const contents: string[] = []
+    for (const { skill, score } of matched) {
+      if (score < threshold) continue
+      
+      try {
+        const content = await this.getSkillContent(skill.id)
+        if (content) {
+          const skillDir = skill.path.replace(/\\/g, '/')
+          const resolvedContent = content.replace(/\{\{SKILL_DIR\}\}/g, skillDir)
+          
+          // Format with score indicator
+          contents.push(`\n--- SKILL: ${skill.name} (relevance: ${(score * 100).toFixed(0)}%) ---\n${resolvedContent}\n`)
+        }
+      } catch {
+        // Skill content unavailable
+      }
+    }
+
+    return contents.length > 0
+      ? `\n\n## Relevant Skills\n\nBased on your request, the following skills are relevant:\n${contents.join('\n')}`
+      : ''
+  }
+
+  /**
+   * Extract pitfalls from a skill's ## Pitfalls section
+   * Returns formatted warnings for agent consumption
+   */
+  async getSkillPitfalls(skillId: string): Promise<string[]> {
+    const contract = await this.getSkillContract(skillId)
+    if (!contract || !contract.sections.pitfalls) {
+      return []
+    }
+
+    const pitfalls: string[] = []
+    const lines = contract.sections.pitfalls.split('\n')
+    
+    for (const line of lines) {
+      const trimmed = line.trim()
+      // Extract bullet points and common mistake patterns
+      if (trimmed.startsWith('-') || trimmed.startsWith('*')) {
+        pitfalls.push(trimmed.substring(1).trim())
+      } else if (trimmed.match(/^\d+\./)) {
+        pitfalls.push(trimmed.replace(/^\d+\.\s*/, '').trim())
+      } else if (trimmed.length > 10) {
+        pitfalls.push(trimmed)
+      }
+    }
+
+    return pitfalls
+  }
+
+  /**
+   * Inject skill pitfalls as warnings into the system prompt
+   */
+  async getPitfallsWarnings(skillIds: string[]): Promise<string> {
+    const allPitfalls: string[] = []
+    
+    for (const skillId of skillIds) {
+      const pitfalls = await this.getSkillPitfalls(skillId)
+      allPitfalls.push(...pitfalls)
+    }
+
+    if (allPitfalls.length === 0) return ''
+
+    const uniquePitfalls = [...new Set(allPitfalls)]
+    return `\n\n## ⚠️ Skill Pitfalls to Avoid\n\n${uniquePitfalls.map(p => `- ${p}`).join('\n')}`
   }
 }
 
