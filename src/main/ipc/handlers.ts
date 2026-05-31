@@ -49,7 +49,7 @@ function setupAgentHandlers(): void {
     'agent:send-message',
     async (_event, message: string): Promise<IpcResponse<string>> => {
       try {
-        const response = await agentService.processMessage(message, 'none', [], undefined, {
+        const response = await agentService.processMessage(message, 'none', [], undefined, undefined, {
           source: 'system'
         })
 

@@ -49,6 +49,6 @@ export class GoogleTransport implements ProviderTransport {
     })
 
     const result = await genModel.generateContent({ contents })
-    return convertGeminiResponseToAnthropic(result, this.config.model, toolUseIdToName)
+    return convertGeminiResponseToAnthropic(result, this.config.model, toolUseIdToName) as LLMResponse
   }
 }
