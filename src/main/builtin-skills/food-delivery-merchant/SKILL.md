@@ -31,11 +31,15 @@ Use this skill when Bobby asks to:
 
 ## Platform Credentials
 
-| Platform | URL | Email | Password |
-|----------|-----|-------|----------|
-| DoorDash | https://merchant.doordash.com | tbd | tbd |
-| Uber Eats | https://restaurant.uber.com | tbd | tbd |
-| GrubHub | https://restaurant.grubhub.com | Business@wolfpaqmarketing.com | 100Drums |
+| Platform | Store/URL | Email | Password |
+|----------|-----------|-------|----------|
+| DoorDash | store_id: 1344693 | business@wolfpaqmarketing.com | Zonegod333$ |
+| Uber Eats | https://merchants.ubereats.com/manager/menumaker/0dc79747-ff8a-48f9-b190-cf5be8e0014d | business@wolfpaqmarketing.com | Zonegod333$ |
+| GrubHub | https://restaurant.grubhub.com/menu-entry/2448490 | business@wolfpaqmarketing.com | 100Drums |
+
+**Account name:** Bobby Craig
+**Store:** Sashey's Kitchen (Jamaican) — Burnet Ave
+**Instagram:** Bobbywealthbc
 
 ## DoorDash Merchant Portal Workflow
 
