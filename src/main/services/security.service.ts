@@ -36,7 +36,7 @@ class SecurityService {
   private boundUsersByPlatform: Map<Platform, Map<string, BoundUser>> = new Map()
   private storagePath: string
   private initialized = false
-  private readonly CODE_EXPIRY_MS = 3 * 60 * 1000 // 3 minutes
+  private readonly CODE_EXPIRY_MS = 10 * 60 * 1000 // 10 minutes
   private readonly CODE_LENGTH = 6
 
   constructor() {
