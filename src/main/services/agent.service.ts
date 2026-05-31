@@ -1,6 +1,4 @@
-import OpenAI from 'openai'
-import { runOpenAIAdapter } from './agent/openai-adapter'
-import { runGeminiAdapter, createToolUseIdMap } from './agent/gemini-adapter'
+import { createTransport } from './ai/transports/factory'
 import Anthropic from '@anthropic-ai/sdk'
 import path from 'path'
 import { nativeImage } from 'electron'
@@ -1301,9 +1299,8 @@ export class AgentService {
    * Run the agentic loop until we get a final response
    */
   private async runAgentLoop(): Promise<AgentResponse> {
-    // Create client with current settings (re-read each time in case settings changed)
-    const { client, model, maxTokens, provider, geminiApiKey } = await createClient()
-    const geminiToolIdMap = provider === 'gemini' ? createToolUseIdMap() : undefined
+    // Create transport from current settings (re-read each time in case settings changed)
+    const { transport, compactContext } = await createTransport()
     const settings = await loadSettings()
     const systemPrompt = await getSystemPromptForPlatform(this.currentPlatform)
     const tools = getToolsForPlatform(this.currentPlatform, {
@@ -1315,7 +1312,7 @@ export class AgentService {
       ? tools
       : tools.filter((tool) => tool.name !== 'bash')
     // #region agent log
-    fetch('http://localhost:7892/ingest/443430ae-db47-457c-ba67-1dd0ac8fcd15',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'eafdcd'},body:JSON.stringify({sessionId:'eafdcd',location:'agent.service.ts:runAgentLoop',message:'tools loaded',data:{totalTools:effectiveTools.length,mcpTools:effectiveTools.filter(t=>t.name.startsWith('mcp_')).map(t=>({name:t.name,schemaKeys:Object.keys(t.input_schema||{})})),provider,model},timestamp:Date.now(),hypothesisId:'A,B,C'})}).catch(()=>{});
+    fetch('http://localhost:7892/ingest/443430ae-db47-457c-ba67-1dd0ac8fcd15',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'eafdcd'},body:JSON.stringify({sessionId:'eafdcd',location:'agent.service.ts:runAgentLoop',message:'tools loaded',data:{totalTools:effectiveTools.length,mcpTools:effectiveTools.filter(t=>t.name.startsWith('mcp_')).map(t=>({name:t.name,schemaKeys:Object.keys(t.input_schema||{})})),provider:transport.provider,model:transport.name()},timestamp:Date.now(),hypothesisId:'A,B,C'})}).catch(()=>{});
     // #endregion
 
     // Enforce message count limit once before the loop starts
@@ -1341,7 +1338,7 @@ export class AgentService {
       }
 
       iterations++
-      console.log(`[Agent] Loop iteration ${iterations}, model: ${model}`)
+      console.log(`[Agent] Loop iteration ${iterations}, model: ${transport.name()}`)
       this.setStatus('thinking', undefined, iterations)
 
       // Check and truncate context if too large
@@ -1373,97 +1370,29 @@ export class AgentService {
         }
       })
 
-      // Call Claude API with platform-specific tools
-      // Only use beta API with context management for official Claude provider
-      // Custom providers (minimax, custom) may not support beta features
+      // Call the LLM via the transport abstraction layer
       let response: Anthropic.Message
-      const llmSpanId = this.currentTraceId ? traceService.startSpan(this.currentTraceId!, `llm.call.${iterations}`, { provider, model, iteration: iterations }) : ''
+      const llmSpanId = this.currentTraceId ? traceService.startSpan(this.currentTraceId!, `llm.call.${iterations}`, { provider: transport.provider, model: transport.name(), iteration: iterations }) : ''
 
       try {
-        if (provider === 'claude') {
-          const anthropicClient = client as Anthropic;
-          // Use beta API with context management for automatic tool result clearing
-          const betaResponse = await anthropicClient.beta.messages.create({
-            model,
-            max_tokens: maxTokens,
-            system: systemPrompt,
-            tools: effectiveTools,
-            messages: this.conversationHistory,
-            // Enable context editing to automatically clear old tool results when approaching token limit
-            betas: ['context-management-2025-06-27'],
-            context_management: {
-              edits: [{
-                type: 'clear_tool_uses_20250919',
-                trigger: { type: 'input_tokens', value: 100000 },
-                keep: { type: 'tool_uses', value: 5 },
-                clear_at_least: { type: 'input_tokens', value: 10000 }
-              }]
-            }
-          })
-          
-          // Log context editing if applied (beta API feature)
-          const contextMgmt = (betaResponse as unknown as { context_management?: { applied_edits?: Array<{ cleared_tool_uses?: number; cleared_input_tokens?: number }> } }).context_management
-          if (contextMgmt?.applied_edits?.length) {
-            for (const edit of contextMgmt.applied_edits) {
-              console.log(`[Agent] Context editing applied: cleared ${edit.cleared_tool_uses ?? 0} tool uses (${edit.cleared_input_tokens ?? 0} tokens)`)
-            }
-          }
-          
-          response = betaResponse as unknown as Anthropic.Message
-        } else if (provider === 'ollama' || provider === 'openai') {
-          // 由于非 Claude 分支，这里沿用作者原本的压缩老旧 Tool Result 逻辑
-          const compacted = await compactToolResults(this.conversationHistory)
+        // Compact context before the API call for providers that need it
+        if (compactContext) {
+          const compacted = await compactContext(this.conversationHistory)
           if (compacted > 0) {
             console.log(`[Agent] Context compaction: offloaded ${compacted} old tool results to files`)
           }
-
-          // 使用适配器调用 OpenAI / Ollama
-          response = await runOpenAIAdapter(
-            client as OpenAI,
-            model,
-            maxTokens,
-            0.7,
-            systemPrompt,
-            effectiveTools,
-            this.conversationHistory
-          );
-        } else if (provider === 'gemini') {
-          const compacted = await compactToolResults(this.conversationHistory)
-          if (compacted > 0) {
-            console.log(`[Agent] Context compaction: offloaded ${compacted} old tool results to files`)
-          }
-
-          response = await runGeminiAdapter(
-            geminiApiKey!,
-            model,
-            maxTokens,
-            0.7,
-            systemPrompt,
-            effectiveTools,
-            this.conversationHistory,
-            geminiToolIdMap
-          );
-        } else {
-          // For non-Claude providers: offload old large tool_results to files
-          // LLM can use file_read to access the content on demand
-          const compacted = await compactToolResults(this.conversationHistory)
-          if (compacted > 0) {
-            console.log(`[Agent] Context compaction: offloaded ${compacted} old tool results to files`)
-          }
-
-          const anthropicClient = client as Anthropic;
-          // Use standard API for non-Claude providers
-          response = await anthropicClient.messages.create({
-            model,
-            max_tokens: maxTokens,
-            system: systemPrompt,
-            tools: effectiveTools,
-            messages: this.conversationHistory
-          })
         }
+
+        // Build the messages with system prompt prepended (transport handles provider-specific conversion)
+        const messagesWithSystem: Anthropic.MessageParam[] = systemPrompt
+          ? [{ role: 'user' as const, content: [{ type: 'text' as const, text: systemPrompt }] }, ...this.conversationHistory]
+          : this.conversationHistory
+
+        const llmResponse = await transport.complete(messagesWithSystem, effectiveTools)
+        response = llmResponse as unknown as Anthropic.Message
       } catch (apiError: unknown) {
         // #region agent log
-        fetch('http://localhost:7892/ingest/443430ae-db47-457c-ba67-1dd0ac8fcd15',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'eafdcd'},body:JSON.stringify({sessionId:'eafdcd',location:'agent.service.ts:catch',message:'API error caught',data:{error:String(apiError),errorName:(apiError as any)?.name,status:(apiError as any)?.status,errorMessage:(apiError as any)?.message?.substring?.(0,500),provider,model},timestamp:Date.now(),hypothesisId:'B,D'})}).catch(()=>{});
+        fetch('http://localhost:7892/ingest/443430ae-db47-457c-ba67-1dd0ac8fcd15',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'eafdcd'},body:JSON.stringify({sessionId:'eafdcd',location:'agent.service.ts:catch',message:'API error caught',data:{error:String(apiError),errorName:(apiError as any)?.name,status:(apiError as any)?.status,errorMessage:(apiError as any)?.message?.substring?.(0,500),provider:transport.provider,model:transport.name()},timestamp:Date.now(),hypothesisId:'B,D'})}).catch(()=>{});
         // #endregion
         // Check if this is a token limit / context length error
         const errorStr = String(apiError)
@@ -1765,7 +1694,7 @@ export class AgentService {
       console.log('[Agent] User request:', context.userRequest.substring(0, 50) + '...')
       console.log('[Agent] Data summary:', data.summary.substring(0, 50) + '...')
 
-      const { client, model, maxTokens, provider, geminiApiKey } = await createClient()
+      const { transport } = await createTransport()
 
       const evaluationPrompt = this.buildEvaluationPrompt(context, data)
 
@@ -1793,45 +1722,13 @@ STRICT Guidelines:
 
 IMPORTANT: Respond with ONLY the JSON object, no additional text.`
 
-      let textContent: Anthropic.TextBlock | undefined;
+      const messages: Anthropic.MessageParam[] = [
+        { role: 'user', content: [{ type: 'text' as const, text: evalSystemPrompt }] },
+        { role: 'user', content: [{ type: 'text' as const, text: evaluationPrompt }] }
+      ]
 
-      if (provider === 'ollama' || provider === 'openai') {
-        const response = await runOpenAIAdapter(
-          client as OpenAI,
-          model,
-          Math.min(maxTokens, 1024),
-          0.7,
-          evalSystemPrompt,
-          [],
-          [{ role: 'user', content: evaluationPrompt }]
-        );
-        textContent = response.content.find((block) => block.type === 'text') as Anthropic.TextBlock | undefined;
-      } else if (provider === 'gemini') {
-        const response = await runGeminiAdapter(
-          geminiApiKey!,
-          model,
-          Math.min(maxTokens, 1024),
-          0.7,
-          evalSystemPrompt,
-          [],
-          [{ role: 'user', content: evaluationPrompt }]
-        );
-        textContent = response.content.find((block) => block.type === 'text') as Anthropic.TextBlock | undefined;
-      } else {
-        const anthropicClient = client as Anthropic;
-        const response = await anthropicClient.messages.create({
-          model,
-          max_tokens: Math.min(maxTokens, 1024),
-          system: evalSystemPrompt,
-          messages: [
-            {
-              role: 'user',
-              content: evaluationPrompt
-            }
-          ]
-        });
-        textContent = response.content.find((block) => block.type === 'text') as Anthropic.TextBlock | undefined;
-      }
+      const response = await transport.complete(messages, [])
+      const textContent = response.content.find((block) => block.type === 'text') as Anthropic.TextBlock | undefined;
 
       if (!textContent || textContent.type !== 'text') {
         return { success: false, error: 'No text response from LLM' }
