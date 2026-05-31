@@ -1,4 +1,7 @@
-type ToolResult = { success: boolean; data?: unknown; error?: string }
+import { loadSettings } from '../config/settings.config'
+import { runDelegate, type DelegateOptions } from './bobby/delegate-pool'
+
+export type ToolResult = { success: boolean; data?: unknown; error?: string }
 
 export interface BobbyConfig {
   baseUrl: string
@@ -7,11 +10,7 @@ export interface BobbyConfig {
   agentId: string
 }
 
-/**
- * Get Bobby API config from settings.
- */
 async function getBobbyConfig(): Promise<BobbyConfig> {
-  const { loadSettings } = await import('../config/settings.config')
   const settings = await loadSettings()
 
   return {
@@ -22,9 +21,6 @@ async function getBobbyConfig(): Promise<BobbyConfig> {
   }
 }
 
-/**
- * Execute bobby_memory: retrieve memory by query from the Bobby API.
- */
 export async function executeBobbyMemory(query: string): Promise<ToolResult> {
   try {
     const memuConfig = await getBobbyConfig()
@@ -47,14 +43,15 @@ export async function executeBobbyMemory(query: string): Promise<ToolResult> {
   }
 }
 
-/**
- * Execute a Bobby tool by name
- */
 export async function executeBobbyTool(name: string, input: unknown): Promise<ToolResult> {
   switch (name) {
     case 'bobby_memory': {
       const { query } = input as { query: string }
       return await executeBobbyMemory(query)
+    }
+    case 'bobby_delegate': {
+      const options = input as DelegateOptions
+      return await runDelegate(options)
     }
     default:
       return { success: false, error: `Unknown Bobby tool: ${name}` }
