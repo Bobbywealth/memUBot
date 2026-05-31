@@ -55,6 +55,6 @@ export class OpenAITransport implements ProviderTransport {
       temperature: this.temperature,
     })
 
-    return convertOpenAIResponseToAnthropic(completion)
+    return convertOpenAIResponseToAnthropic(completion) as LLMResponse
   }
 }
