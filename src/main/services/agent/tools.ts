@@ -1,5 +1,6 @@
 import type Anthropic from '@anthropic-ai/sdk'
 import { computerUseTools, computerTool } from '../../tools/computer.definitions'
+import { browserTool, webFetchTool, siteCrawlerTool } from '../../tools/browser.definitions'
 import { telegramTools } from '../../tools/telegram.definitions'
 import { discordTools } from '../../tools/discord.definitions'
 import { whatsappTools } from '../../tools/whatsapp.definitions'
@@ -29,8 +30,9 @@ export interface ExperimentalToolOptions {
 export function getToolsForPlatform(platform: MessagePlatform, options: ExperimentalToolOptions = {}): Anthropic.Tool[] {
   const { visualModeEnabled = false, computerUseEnabled = false } = options
   
-  // Base tools: bash, text editor, download, web search
+  // Base tools: bash, text editor, download, web search, browser automation
   // Computer tool (mouse/keyboard/screenshot) only when experimentalComputerUse is enabled
+  const browserTools = [browserTool, webFetchTool, siteCrawlerTool]
   const baseTools = computerUseEnabled 
     ? [computerTool, ...computerUseTools]
     : [...computerUseTools]
@@ -64,6 +66,6 @@ export function getToolsForPlatform(platform: MessagePlatform, options: Experime
     case 'local':
     case 'none':
     default:
-      return [...baseTools, ...platformTools, ...visualTools, ...bobbySvcTools, ...mcpTools]
+      return [...baseTools, ...browserTools, ...platformTools, ...visualTools, ...bobbySvcTools, ...mcpTools]
   }
 }

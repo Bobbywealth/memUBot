@@ -4,6 +4,7 @@ import * as path from 'path'
 import * as readline from 'readline'
 import { app } from 'electron'
 import { truncateOutput } from './computer.executor'
+import { executeBrowserAction, executeWebFetch, executeSiteCrawl } from './browser.executor'
 import { guardFileBoundary } from '../utils/file-boundary'
 import type {
   ReadFileInput,
@@ -45,6 +46,21 @@ export async function executeTool(
 
       case 'get_file_info':
         return await executeGetFileInfo(toolInput as FileInfoInput)
+
+      case 'browser': {
+        const result = await executeBrowserAction(toolInput as any)
+        return { success: !result.error, data: result, error: result.error as string | undefined }
+      }
+
+      case 'web_fetch': {
+        const result = await executeWebFetch(toolInput as any)
+        return { success: !result.error, data: result, error: result.error as string | undefined }
+      }
+
+      case 'site_crawl': {
+        const result = await executeSiteCrawl(toolInput as any)
+        return { success: !result.error, data: result, error: result.error as string | undefined }
+      }
 
       default:
         return {
