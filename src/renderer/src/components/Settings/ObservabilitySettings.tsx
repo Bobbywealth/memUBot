@@ -165,7 +165,7 @@ export function ObservabilitySettings(): JSX.Element {
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
-      a.download = `memubot-logs-${selectedDate || 'today'}.json`
+      a.download = `bobbyot-logs-${selectedDate || 'today'}.json`
       a.click()
       URL.revokeObjectURL(url)
     }

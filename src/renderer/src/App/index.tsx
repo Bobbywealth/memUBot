@@ -1,8 +1,8 @@
 /**
  * App Component
  */
-import { MemuApp } from './memu.impl'
+import { BobbyApp } from './bobby.impl'
 
-const App = MemuApp
+const App = BobbyApp
 
 export default App

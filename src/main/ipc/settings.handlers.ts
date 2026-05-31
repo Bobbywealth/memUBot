@@ -192,14 +192,14 @@ export function setupSettingsHandlers(): void {
       try {
         // Get current settings to detect changes
         const previousSettings = await loadSettings()
-        const previousMemuApiKey = previousSettings.memuApiKey
+        const previousBobbyApiKey = previousSettings.memuApiKey
         
         await saveSettings(updates)
         
         // Check if memuApiKey was set (from empty to non-empty)
-        const newMemuApiKey = updates.memuApiKey
-        if (newMemuApiKey && newMemuApiKey.trim() !== '' && 
-            (!previousMemuApiKey || previousMemuApiKey.trim() === '')) {
+        const newBobbyApiKey = updates.memuApiKey
+        if (newBobbyApiKey && newBobbyApiKey.trim() !== '' && 
+            (!previousBobbyApiKey || previousBobbyApiKey.trim() === '')) {
           // memuApiKey was just configured, try to start proactive service
           // console.log('[Settings] memuApiKey was set, attempting to start proactive service')
           // try {

@@ -1,7 +1,7 @@
 {
-  "name": "memu-bot",
-  "version": "1.0.4",
-  "description": "memU bot - AI Assistant for messaging platforms",
+  "name": "bobby-bot",
+  "version": "1.0.0",
+  "description": "BobbyBot - AI Agent for business automation",
   "main": "./out/main/index.js",
   "engines": {
     "node": ">=v23.11.1"

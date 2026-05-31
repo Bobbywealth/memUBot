@@ -2,16 +2,16 @@
  * Sidebar component types
  */
 
-// Memu navigation items (all platforms)
-export type MemuNavItem = 'local' | 'telegram' | 'discord' | 'whatsapp' | 'slack' | 'line' | 'feishu' | 'qq' | 'settings'
+// Bobby navigation items (all platforms)
+export type BobbyNavItem = 'local' | 'telegram' | 'discord' | 'whatsapp' | 'slack' | 'line' | 'feishu' | 'qq' | 'settings'
 
 // Union type for all possible nav items
-export type NavItem = MemuNavItem
+export type NavItem = BobbyNavItem
 
 // Sidebar props
-export interface MemuSidebarProps {
-  activeNav: MemuNavItem
-  onNavChange: (nav: MemuNavItem) => void
+export interface BobbySidebarProps {
+  activeNav: BobbyNavItem
+  onNavChange: (nav: BobbyNavItem) => void
 }
 
 // Generic props for the exported Sidebar

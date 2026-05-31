@@ -207,7 +207,7 @@ class TraceService {
     const contextManager = new AsyncLocalStorageContextManager()
 
     this.provider = new NodeTracerProvider({
-      resource: resourceFromAttributes({ 'service.name': 'memUBot' }),
+      resource: resourceFromAttributes({ 'service.name': 'bobbyBot' }),
       spanProcessors: [
         new BatchSpanProcessor(this.exporter, {
           scheduledDelayMillis: 1000,
@@ -219,7 +219,7 @@ class TraceService {
     this.provider.register({ contextManager })
   }
 
-  getTracer(name = 'memUBot') {
+  getTracer(name = 'bobbyBot') {
     return trace.getTracer(name)
   }
 

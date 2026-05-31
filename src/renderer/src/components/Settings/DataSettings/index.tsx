@@ -1,3 +1,3 @@
-import { MemuDataSettings } from './memu.impl'
+import { BobbyDataSettings } from './bobby.impl'
 
-export const DataSettings = MemuDataSettings
+export const DataSettings = BobbyDataSettings

@@ -17,7 +17,7 @@ import { AboutSettings } from '../AboutSettings'
 
 type SettingsTab = 'general' | 'platforms' | 'security' | 'model' | 'skills' | 'services' | 'mcp' | 'data' | 'power' | 'experimental' | 'observability' | 'about'
 
-export function MemuSettingsView(): JSX.Element {
+export function BobbySettingsView(): JSX.Element {
   const { t } = useTranslation()
   const [activeTab, setActiveTab] = useState<SettingsTab>('general')
 

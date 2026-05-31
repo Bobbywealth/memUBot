@@ -6,7 +6,7 @@ import {
 const REQUEST_TIMEOUT_MS = 1200
 const EMBEDDING_ENDPOINTS = ['/api/v3/voyage/v1/embeddings', '/api/v3/embedding'] as const
 
-export interface MemuConfig {
+export interface BobbyConfig {
   baseUrl: string
   apiKey: string
 }
@@ -30,10 +30,10 @@ export interface LayeredDenseScoreProvider {
   getDenseScores(input: DenseScoreRequest): Promise<Map<string, number>>
 }
 
-interface MemuDenseScoreProviderOptions {
+interface BobbyDenseScoreProviderOptions {
   requestTimeoutMs?: number
   fetchImpl?: typeof fetch
-  resolveConfig?: () => Promise<MemuConfig | null>
+  resolveConfig?: () => Promise<BobbyConfig | null>
 }
 
 function clamp01(value: number): number {
@@ -41,7 +41,7 @@ function clamp01(value: number): number {
   return Math.max(0, Math.min(1, value))
 }
 
-async function getMemuConfig(): Promise<MemuConfig> {
+async function getBobbyConfig(): Promise<BobbyConfig> {
   const { loadSettings } = await import('../../../../config/settings.config')
   const settings = await loadSettings()
 
@@ -181,7 +181,7 @@ function calculateCosineSimilarity(left: number[], right: number[]): number {
 }
 
 async function requestEmbeddings(
-  config: MemuConfig,
+  config: BobbyConfig,
   input: string[],
   signal: AbortSignal,
   fetchImpl: typeof fetch
@@ -219,17 +219,17 @@ async function requestEmbeddings(
   return []
 }
 
-export class MemuDenseScoreProvider implements LayeredDenseScoreProvider {
-  constructor(private readonly options: MemuDenseScoreProviderOptions = {}) {}
+export class BobbyDenseScoreProvider implements LayeredDenseScoreProvider {
+  constructor(private readonly options: BobbyDenseScoreProviderOptions = {}) {}
 
   async getDenseScores(input: DenseScoreRequest): Promise<Map<string, number>> {
     if (input.candidates.length === 0) {
       return new Map()
     }
 
-    let config: MemuConfig | null
+    let config: BobbyConfig | null
     try {
-      config = this.options.resolveConfig ? await this.options.resolveConfig() : await getMemuConfig()
+      config = this.options.resolveConfig ? await this.options.resolveConfig() : await getBobbyConfig()
     } catch {
       return new Map()
     }

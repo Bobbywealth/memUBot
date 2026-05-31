@@ -1,5 +1,5 @@
-appId: com.nevamind.memu-bot
-productName: memU bot
+appId: com.bobbywealth.bobby-bot
+productName: BobbyBot
 directories:
   buildResources: build
 files:
@@ -46,7 +46,7 @@ asarUnpack:
   - node_modules/utf-8-validate/**
   - node_modules/zlib-sync/**
 win:
-  executableName: memu-bot
+  executableName: bobby-bot
   # Windows icon - with rounded corners (electron-builder auto-converts PNG to ICO)
   icon: build/icon-win.png
 nsis:

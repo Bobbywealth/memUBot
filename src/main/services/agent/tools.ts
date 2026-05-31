@@ -7,7 +7,7 @@ import { slackTools } from '../../tools/slack.definitions'
 import { lineTools } from '../../tools/line.definitions'
 import { feishuTools } from '../../tools/feishu.definitions'
 import { serviceTools } from '../../tools/service.definitions'
-import { memuTools } from '../../tools/memu.definitions'
+import { bobbyTools } from '../../tools/bobby.definitions'
 import { getMacOSTools } from '../../tools/macos/definitions'
 import { getVisualTools } from '../../tools/macos/visual.definitions'
 import { mcpService } from '../mcp.service'
@@ -41,8 +41,8 @@ export function getToolsForPlatform(platform: MessagePlatform, options: Experime
   // Add MCP tools to all platforms
   const mcpTools = mcpService.getTools()
   
-  // Service tools and memu (memory) tools are available on all platforms
-  const svcTools = [...serviceTools]
+  // Service tools and bobby (memory) tools are available on all platforms
+  const bobbySvcTools = [...serviceTools, ...bobbyTools]
   
   // Visual tools - only injected when experimentalVisualMode is enabled
   // This keeps the code clean: when disabled, Agent doesn't know visual tools exist
@@ -50,20 +50,20 @@ export function getToolsForPlatform(platform: MessagePlatform, options: Experime
   
   switch (platform) {
     case 'telegram':
-      return [...baseTools, ...platformTools, ...visualTools, ...telegramTools, ...svcTools, ...memuTools, ...mcpTools]
+      return [...baseTools, ...platformTools, ...visualTools, ...telegramTools, ...bobbySvcTools, ...mcpTools]
     case 'discord':
-      return [...baseTools, ...platformTools, ...visualTools, ...discordTools, ...svcTools, ...memuTools, ...mcpTools]
+      return [...baseTools, ...platformTools, ...visualTools, ...discordTools, ...bobbySvcTools, ...mcpTools]
     case 'whatsapp':
-      return [...baseTools, ...platformTools, ...visualTools, ...whatsappTools, ...svcTools, ...memuTools, ...mcpTools]
+      return [...baseTools, ...platformTools, ...visualTools, ...whatsappTools, ...bobbySvcTools, ...mcpTools]
     case 'slack':
-      return [...baseTools, ...platformTools, ...visualTools, ...slackTools, ...svcTools, ...memuTools, ...mcpTools]
+      return [...baseTools, ...platformTools, ...visualTools, ...slackTools, ...bobbySvcTools, ...mcpTools]
     case 'line':
-      return [...baseTools, ...platformTools, ...visualTools, ...lineTools, ...svcTools, ...memuTools, ...mcpTools]
+      return [...baseTools, ...platformTools, ...visualTools, ...lineTools, ...bobbySvcTools, ...mcpTools]
     case 'feishu':
-      return [...baseTools, ...platformTools, ...visualTools, ...feishuTools, ...svcTools, ...memuTools, ...mcpTools]
+      return [...baseTools, ...platformTools, ...visualTools, ...feishuTools, ...bobbySvcTools, ...mcpTools]
     case 'local':
     case 'none':
     default:
-      return [...baseTools, ...platformTools, ...visualTools, ...svcTools, ...memuTools, ...mcpTools]
+      return [...baseTools, ...platformTools, ...visualTools, ...bobbySvcTools, ...mcpTools]
   }
 }

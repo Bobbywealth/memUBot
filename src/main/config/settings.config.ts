@@ -579,7 +579,7 @@ class SettingsManager {
    * Get memu API configuration
    * Reads API key from secure storage
    */
-  async getMemuConfig(): Promise<{ baseUrl: string; apiKey: string; userId: string; agentId: string }> {
+  async getBobbyConfig(): Promise<{ baseUrl: string; apiKey: string; userId: string; agentId: string }> {
     await this.ensureInitialized()
     
     return {
@@ -593,7 +593,7 @@ class SettingsManager {
   /**
    * Get proactive memu configuration
    */
-  async getProactiveMemuConfig(): Promise<{ baseUrl: string; apiKey: string; userId: string; agentId: string }> {
+  async getProactiveBobbyConfig(): Promise<{ baseUrl: string; apiKey: string; userId: string; agentId: string }> {
     await this.ensureInitialized()
     
     return {

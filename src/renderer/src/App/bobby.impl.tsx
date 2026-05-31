@@ -1,5 +1,5 @@
 /**
- * App - Memu Implementation
+ * App - Bobby Implementation
  * Full-featured app with all messaging platforms
  */
 import { useState, useEffect } from 'react'
@@ -40,7 +40,7 @@ interface StartupStatus {
   progress: number
 }
 
-export function MemuApp(): JSX.Element {
+export function BobbyApp(): JSX.Element {
   const { t } = useTranslation()
   const [activeNav, setActiveNav] = useState<NavItem>(getSavedAppTab)
   const themeMode = useThemeStore((state) => state.mode)

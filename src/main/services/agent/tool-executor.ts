@@ -9,7 +9,7 @@ import { executeSlackTool } from '../../tools/slack.executor'
 import { executeLineTool } from '../../tools/line.executor'
 import { executeFeishuTool } from '../../tools/feishu.executor'
 import { executeServiceTool } from '../../tools/service.executor'
-import { executeMemuTool } from '../../tools/memu.executor'
+import { executeBobbyTool } from '../../tools/bobby.executor'
 import { getBashToolAccessDecision } from '../bash-tool-access'
 import { mcpService } from '../mcp.service'
 import type { MessagePlatform, ToolExecutionContext, ToolResult } from './types'
@@ -128,9 +128,9 @@ export async function executeTool(
     return await executeServiceTool(name, input)
   }
 
-  // Memu tools (memory retrieval)
-  if (name.startsWith('memu_')) {
-    return await executeMemuTool(name, input)
+  // Bobby tools (memory retrieval)
+  if (name.startsWith('bobby_')) {
+    return await executeBobbyTool(name, input)
   }
 
   // MCP tools

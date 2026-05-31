@@ -1,8 +1,8 @@
 {
   "extends": "./electron-builder.yml",
-  "appId": "com.nevamind.memu-bot",
-  "productName": "memU bot",
+  "appId": "com.bobbywealth.bobby-bot",
+  "productName": "BobbyBot",
   "win": {
-    "executableName": "memu-bot"
+    "executableName": "bobby-bot"
   }
 }

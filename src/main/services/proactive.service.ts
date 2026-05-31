@@ -42,11 +42,11 @@ const USER_INPUT_MAX_WAIT_MS = 10 * 60 * 1000
 const contextMessageWindowSize = 20
 
 /**
- * Memu tools definitions for memory retrieval
+ * Bobby tools definitions for memory retrieval
  */
 const memuTools: Anthropic.Tool[] = [
   {
-    name: 'memu_memory',
+    name: 'bobby_memory',
     description: 'Retrieve memory based on a query. Use this to recall past conversations, facts, or context about the user.',
     input_schema: {
       type: 'object' as const,
@@ -60,7 +60,7 @@ const memuTools: Anthropic.Tool[] = [
     }
   },
   {
-    name: 'memu_todos',
+    name: 'bobby_todos',
     description: 'Retrieve todos for the user. Returns a list of pending tasks and their summaries.',
     input_schema: {
       type: 'object' as const,
@@ -133,7 +133,7 @@ class ProactiveService {
   /**
    * Get memu configuration from settings
    */
-  private async getMemuConfig(): Promise<{
+  private async getBobbyConfig(): Promise<{
     baseUrl: string
     apiKey: string
     userId: string
@@ -196,12 +196,12 @@ class ProactiveService {
   }
 
   /**
-   * Execute memu_memory tool
+   * Execute bobby_memory tool
    * This tool use main user/agent ids to retrieve memory from the main service.
    */
-  private async executeMemuMemory(query: string): Promise<{ success: boolean; data?: unknown; error?: string }> {
+  private async executeBobbyMemory(query: string): Promise<{ success: boolean; data?: unknown; error?: string }> {
     try {
-      const memuConfig = await this.getMemuConfig()
+      const memuConfig = await this.getBobbyConfig()
       const response = await fetch(`${memuConfig.baseUrl}/api/v3/memory/retrieve`, {
         method: 'POST',
         headers: {
@@ -222,12 +222,12 @@ class ProactiveService {
   }
 
   /**
-   * Execute memu_todos tool to get todos
+   * Execute bobby_todos tool to get todos
    * This tool use proactive user/agent ids to retrieve todos from the proactive service.
    */
-  private async executeMemuTodos(): Promise<{ success: boolean; data?: unknown; error?: string }> {
+  private async executeBobbyTodos(): Promise<{ success: boolean; data?: unknown; error?: string }> {
     try {
-      const memuConfig = await this.getMemuConfig()
+      const memuConfig = await this.getBobbyConfig()
       const response = await fetch(`${memuConfig.baseUrl}/api/v3/memory/categories`, {
         method: 'POST',
         headers: {
@@ -787,15 +787,15 @@ class ProactiveService {
       }
     }
 
-    // Memu tools
+    // Bobby tools
     switch (name) {
-      case 'memu_memory': {
+      case 'bobby_memory': {
         const args = input as { query: string }
-        return await this.executeMemuMemory(args.query)
+        return await this.executeBobbyMemory(args.query)
       }
 
-      case 'memu_todos': {
-        return await this.executeMemuTodos()
+      case 'bobby_todos': {
+        return await this.executeBobbyTodos()
       }
 
       case 'wait_user_confirm': {

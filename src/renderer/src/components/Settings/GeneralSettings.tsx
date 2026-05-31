@@ -459,7 +459,7 @@ export function GeneralSettings(): JSX.Element {
           </div>
         </div>
 
-        {/* Memu Settings */}
+        {/* Bobby Settings */}
         <div className="p-4 rounded-2xl bg-[var(--glass-bg)] backdrop-blur-xl border border-[var(--primary)]/30 shadow-sm">
           <div className="mb-3">
             <div className="flex items-center gap-2">

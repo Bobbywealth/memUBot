@@ -2,14 +2,14 @@
  * Sidebar Component
  */
 import type { ComponentType } from 'react'
-import { MemuSidebar } from './memu.impl'
-import type { MemuNavItem, MemuSidebarProps } from './types'
+import { BobbySidebar } from './bobby.impl'
+import type { BobbyNavItem, BobbySidebarProps } from './types'
 
 // Export the Sidebar component
-export const Sidebar = MemuSidebar as ComponentType<{
+export const Sidebar = BobbySidebar as ComponentType<{
   activeNav: string
   onNavChange: (nav: string) => void
 }>
 
 // Re-export types
-export type { MemuNavItem, MemuSidebarProps }
+export type { BobbyNavItem, BobbySidebarProps }

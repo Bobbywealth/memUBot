@@ -1,7 +1,7 @@
 /**
  * API Types
  * 
- * Data structures for Memu API requests and responses.
+ * Data structures for Bobby API requests and responses.
  */
 
 // ============================================
@@ -29,6 +29,6 @@ export interface CsrfTokenResponse {
 // Config Types
 // ============================================
 
-export interface MemuApiConfig {
+export interface BobbyApiConfig {
   baseUrl: string
 }

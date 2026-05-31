@@ -1,3 +1,3 @@
-import { MemuSettingsView } from './memu.impl'
+import { BobbySettingsView } from './bobby.impl'
 
-export const SettingsView = MemuSettingsView
+export const SettingsView = BobbySettingsView

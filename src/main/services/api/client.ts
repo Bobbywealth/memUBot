@@ -1,16 +1,16 @@
 /**
- * Memu API Client
+ * Bobby API Client
  * 
  * Base HTTP client with CSRF token management.
  */
 
-import type { ApiResponse, CsrfTokenResponse, MemuApiConfig } from './types'
+import type { ApiResponse, CsrfTokenResponse, BobbyApiConfig } from './types'
 
 // ============================================
 // Error Class
 // ============================================
 
-export class MemuApiError extends Error {
+export class BobbyApiError extends Error {
   constructor(
     message: string,
     public readonly statusCode: number,
@@ -18,7 +18,7 @@ export class MemuApiError extends Error {
     public readonly details?: unknown[]
   ) {
     super(message)
-    this.name = 'MemuApiError'
+    this.name = 'BobbyApiError'
   }
 }
 
@@ -26,11 +26,11 @@ export class MemuApiError extends Error {
 // API Client
 // ============================================
 
-export class MemuApiClient {
+export class BobbyApiClient {
   private baseUrl: string
   private csrfToken: string | null = null
 
-  constructor(config: MemuApiConfig) {
+  constructor(config: BobbyApiConfig) {
     this.baseUrl = config.baseUrl.replace(/\/$/, '') // Remove trailing slash
   }
 
@@ -46,7 +46,7 @@ export class MemuApiClient {
    * Must be called before making authenticated requests
    */
   async fetchCsrfToken(): Promise<string> {
-    console.log('[MemuAPI] Fetching CSRF token...')
+    console.log('[BobbyAPI] Fetching CSRF token...')
     
     const response = await fetch(`${this.baseUrl}/api/v3/auth/csrf`, {
       method: 'GET',
@@ -71,7 +71,7 @@ export class MemuApiClient {
     }
 
     this.csrfToken = csrfToken
-    console.log('[MemuAPI] CSRF token obtained')
+    console.log('[BobbyAPI] CSRF token obtained')
     return csrfToken
   }
 
@@ -112,7 +112,7 @@ export class MemuApiClient {
     // Add CSRF token to headers and cookies
     if (requiresCsrf && this.csrfToken) {
       requestHeaders['X-CSRF-Token'] = this.csrfToken
-      requestHeaders['Cookie'] = `memu_csrf_token=${this.csrfToken}`
+      requestHeaders['Cookie'] = `bobby_csrf_token=${this.csrfToken}`
     }
 
     // Add content type for requests with body
@@ -130,8 +130,8 @@ export class MemuApiClient {
 
     if (!response.ok || data.status === 'error') {
       const errorMessage = data.message || `Request failed: ${response.status}`
-      console.error(`[MemuAPI] Error: ${errorMessage}`, data)
-      throw new MemuApiError(errorMessage, response.status, data.error_code, data.details)
+      console.error(`[BobbyAPI] Error: ${errorMessage}`, data)
+      throw new BobbyApiError(errorMessage, response.status, data.error_code, data.details)
     }
 
     return data
@@ -162,7 +162,7 @@ export class MemuApiClient {
 
     if (requiresCsrf && this.csrfToken) {
       requestHeaders['X-CSRF-Token'] = this.csrfToken
-      requestHeaders['Cookie'] = `memu_csrf_token=${this.csrfToken}`
+      requestHeaders['Cookie'] = `bobby_csrf_token=${this.csrfToken}`
     }
 
     // NOTE: Do NOT set Content-Type — fetch sets it automatically with the boundary
@@ -176,8 +176,8 @@ export class MemuApiClient {
 
     if (!response.ok || data.status === 'error') {
       const errorMessage = data.message || `Upload failed: ${response.status}`
-      console.error(`[MemuAPI] Upload error: ${errorMessage}`, data)
-      throw new MemuApiError(errorMessage, response.status, data.error_code, data.details)
+      console.error(`[BobbyAPI] Upload error: ${errorMessage}`, data)
+      throw new BobbyApiError(errorMessage, response.status, data.error_code, data.details)
     }
 
     return data
@@ -197,17 +197,17 @@ export class MemuApiClient {
 
 export const DEFAULT_BASE_URL = 'https://api.memu.so'
 
-let defaultClient: MemuApiClient | null = null
+let defaultClient: BobbyApiClient | null = null
 
-export function getMemuApiClient(): MemuApiClient {
+export function getBobbyApiClient(): BobbyApiClient {
   if (!defaultClient) {
-    defaultClient = new MemuApiClient({
+    defaultClient = new BobbyApiClient({
       baseUrl: DEFAULT_BASE_URL
     })
   }
   return defaultClient
 }
 
-export function createMemuApiClient(config: MemuApiConfig): MemuApiClient {
-  return new MemuApiClient(config)
+export function createBobbyApiClient(config: BobbyApiConfig): BobbyApiClient {
+  return new BobbyApiClient(config)
 }

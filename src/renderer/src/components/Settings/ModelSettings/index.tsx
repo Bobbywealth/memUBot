@@ -1,3 +1,3 @@
-import { MemuModelSettings } from './memu.impl'
+import { BobbyModelSettings } from './bobby.impl'
 
-export const ModelSettings = MemuModelSettings
+export const ModelSettings = BobbyModelSettings

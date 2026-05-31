@@ -33,7 +33,7 @@ class MemorizationService {
 
   // ==================== Config ====================
 
-  private async getMemuConfig() {
+  private async getBobbyConfig() {
     const settings = await loadSettings()
     return {
       baseUrl: settings.memuBaseUrl,
@@ -177,7 +177,7 @@ class MemorizationService {
     messageCount: number
   ): Promise<'success' | 'failure' | 'pending' | 'error'> {
     try {
-      const memuConfig = await this.getMemuConfig()
+      const memuConfig = await this.getBobbyConfig()
       const response = await fetch(
         `${memuConfig.baseUrl}/api/v3/memory/memorize/status/${taskId}`,
         {
@@ -261,7 +261,7 @@ class MemorizationService {
         return
       }
 
-      const memuConfig = await this.getMemuConfig()
+      const memuConfig = await this.getBobbyConfig()
       const allMessages = await memorizationStorage.getMessages()
 
       if (allMessages.length < MEMORIZE_MIN_MESSAGE_COUNT) {

@@ -65,7 +65,7 @@ class SkillsService {
   private config: SkillsConfig = { enabledSkills: [], disabledSkills: [] }
   private initialized = false
   private githubSkillsCache: GitHubSkillsCache | null = null
-  private userAgent: string = 'memu-bot'
+  private userAgent: string = 'bobby-bot'
 
   constructor() {
     const userDataPath = app.getPath('userData')

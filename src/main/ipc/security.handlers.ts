@@ -162,7 +162,7 @@ export function setupSecurityHandlers(): void {
     try {
       const result = await dialog.showSaveDialog({
         title: 'Export Secure Backup',
-        defaultPath: 'memu-bot-backup.json',
+        defaultPath: 'bobby-bot-backup.json',
         filters: [
           { name: 'JSON Files', extensions: ['json'] },
           { name: 'All Files', extensions: ['*'] }

@@ -31,7 +31,7 @@ vi.mock('../../../tools/slack.executor', () => ({ executeSlackTool: vi.fn() }))
 vi.mock('../../../tools/line.executor', () => ({ executeLineTool: vi.fn() }))
 vi.mock('../../../tools/feishu.executor', () => ({ executeFeishuTool: vi.fn() }))
 vi.mock('../../../tools/service.executor', () => ({ executeServiceTool: vi.fn() }))
-vi.mock('../../../tools/memu.executor', () => ({ executeMemuTool: vi.fn() }))
+vi.mock('../../../tools/memu.executor', () => ({ executeBobbyTool: vi.fn() }))
 
 vi.mock('../../bash-tool-access', () => ({
   getBashToolAccessDecision: vi.fn(),

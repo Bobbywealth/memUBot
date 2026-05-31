@@ -8,15 +8,15 @@
 export type {
   ApiResponse,
   CsrfTokenResponse,
-  MemuApiConfig
+  BobbyApiConfig
 } from './types'
 
 // Client
 export {
-  MemuApiClient,
-  MemuApiError,
-  getMemuApiClient,
-  createMemuApiClient
+  BobbyApiClient,
+  BobbyApiError,
+  getBobbyApiClient,
+  createBobbyApiClient
 } from './client'
 
 // Endpoints

@@ -1,5 +1,5 @@
 /**
- * Shared prompt components for memu-bot
+ * Shared prompt components for bobby-bot
  */
 
 import type { PlatformConfig } from './types'

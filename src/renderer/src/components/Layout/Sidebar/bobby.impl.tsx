@@ -1,5 +1,5 @@
 /**
- * Sidebar - Memu Implementation
+ * Sidebar - Bobby Implementation
  * Shows all messaging platforms (Telegram, Discord, Slack, Feishu)
  */
 import { Settings, Sun, Moon, Monitor, MessageSquare } from 'lucide-react'
@@ -7,9 +7,9 @@ import { useTranslation } from 'react-i18next'
 import { useThemeStore, type ThemeMode } from '../../../stores/themeStore'
 import { appIcon } from '../../../assets'
 import { TelegramIcon, DiscordIcon, SlackIcon, FeishuIcon, QQIcon } from '../../Icons/AppIcons'
-import type { MemuSidebarProps } from './types'
+import type { BobbySidebarProps } from './types'
 
-export function MemuSidebar({ activeNav, onNavChange }: MemuSidebarProps): JSX.Element {
+export function BobbySidebar({ activeNav, onNavChange }: BobbySidebarProps): JSX.Element {
   const { t } = useTranslation()
   const { mode, setMode } = useThemeStore()
 
